@@ -16,13 +16,38 @@ class WebhookController {
       const session = event.data.object;
       const { userId, zoneId } = session.metadata;
 
-      const { error } = await supabase
-        .from('zones')
-        .update({
-          owner_id: userId,        // 👈 On met l'ID de l'acheteur ici
-          statut_market: 'VENDU'   // 👈 On change le statut
-        })
-        .eq('id', zoneId);
+      try {
+        // 1. Mise à jour de la zone (Changement de propriétaire)
+        const { error: updateError } = await supabase
+          .from('zones')
+          .update({
+            owner_id: userId,
+            statut_market: 'VENDU'
+          })
+          .eq('id', zoneId);
+
+        if (updateError) throw new Error(`Update Zone: ${updateError.message}`);
+
+        // 2. Création de l'abonnement (Utilisation de .insert au lieu de .create)
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert([
+            {
+              user_id: userId,
+              zone_id: zoneId,
+              is_actif: true
+            }
+          ]);
+
+        if (insertError) throw new Error(`Insert Subscription: ${insertError.message}`);
+
+        console.log(`✅ Commande traitée avec succès pour l'user ${userId} sur la zone ${zoneId}`);
+
+      } catch (dbError) {
+        console.error(`❌ Erreur Base de données: ${dbError.message}`);
+        // On renvoie un 500 pour que Stripe réessaie le webhook plus tard
+        return res.status(500).json({ error: "Database operation failed" });
+      }
     }
     res.json({ received: true });
   }
