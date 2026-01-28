@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
-import cors from 'cors'; // On reprend la librairie officielle
+import cors from 'cors';
+// Import du controller Webhook DIRECTEMENT ici
+import WebhookController from './controllers/webhook.controller.js'; 
+
 import authRoutes from './routes/auth.routes.js';
 import rootRoutes from './routes/root.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
@@ -10,65 +13,44 @@ import leadRoutes from './routes/leads.routes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ==========================================
-// CONFIGURATION CORS STANDARD & SIMPLE
-// ==========================================
 app.use(cors({
-  // "true" signifie : autorise automatiquement l'origine qui fait la demande
-  // (Que ce soit localhost:5173 ou 127.0.0.1:5173)
   origin: true, 
-  
-  // Autorise les cookies et headers d'authentification
   credentials: true,
-  
-  // Méthodes autorisées
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  
-  // Headers autorisés
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
-// ⚠️ IMPORTANT : Le Webhook DOIT être placé AVANT app.use(express.json())
-// ou alors tu utilises express.raw() uniquement pour cette route.
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+// ==========================================
+// 1. ROUTE WEBHOOK (IMPÉRATIVEMENT ICI)
+// ==========================================
+// On définit la route ici directement pour être sûr qu'aucun autre parser (json) ne la touche avant.
+app.post(
+  '/api/payments/webhook', 
+  express.raw({ type: 'application/json' }), 
+  WebhookController.handleWebhook
+);
 
-
-// Middleware de parsing
+// ==========================================
+// 2. MIDDLEWARES GLOBAUX
+// ==========================================
+// Maintenant on active le JSON pour toutes les AUTRES routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging pour débugger
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.originalUrl}`);
   next();
 });
 
-// 1. D'ABORD les routes spécifiques
+// ==========================================
+// 3. ROUTES
+// ==========================================
 app.use('/api/auth', authRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes); // Le webhook n'est plus dedans
 app.use('/api/zones', zoneRoutes);
 app.use('/api/leads', leadRoutes);
-
-// 2. ENSUITE la route racine /api (rootRoutes)
 app.use('/api', rootRoutes); 
-
-// Test
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
-
-// 404
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route non trouvée' });
-});
-
-// Gestion Erreurs
-app.use((err, req, res, next) => {
-  console.error('❌ Erreur Serveur:', err);
-  res.status(500).json({ error: 'Erreur interne', details: err.message });
-});
 
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-  console.log(`✅ CORS activé en mode automatique (origin: true)`);
 });

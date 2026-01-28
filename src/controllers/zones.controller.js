@@ -53,8 +53,7 @@ class ZoneController {
             // On ajoute lat_center et lng_center sinon Leaflet ne sait pas où dessiner
             const { data, error } = await supabase
                 .from('zones')
-                .select('id, nom, codes_postaux, statut_market, lat_center, lng_center');
-
+                .select('*');
             if (error) throw error;
             res.json(data);
         } catch (err) {

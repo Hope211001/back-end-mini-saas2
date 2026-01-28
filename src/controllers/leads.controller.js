@@ -29,7 +29,7 @@ class LeadController {
             const limit = parseInt(req.query.limit) || 10;
             const from = (page - 1) * limit;
             const to = from + limit - 1;
-            
+
             const userId = req.user.id; // Extrait du JWT
 
             const { data, error, count } = await supabase
@@ -41,13 +41,40 @@ class LeadController {
 
             if (error) throw error;
 
-            res.json({ 
-                data, 
-                totalCount: count, 
-                totalPages: Math.ceil(count / (limit || 1)) 
+            res.json({
+                data,
+                totalCount: count,
+                totalPages: Math.ceil(count / (limit || 1))
             });
         } catch (error) {
             console.error("Erreur getMyLeads:", error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+    static async showMyLead(req, res) {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params; // On récupère l'ID depuis l'URL (/my/:id)
+
+            const { data, error } = await supabase
+                .from('leads')
+                .select('*')
+                .eq('id', id)                   // 1. Filtrer par ID du lead
+                .eq('assigned_user_id', userId) // 2. SÉCURITÉ : Vérifier que ça appartient au user
+                .single();                      // 3. On veut un seul objet, pas un tableau
+
+            if (error) throw error;
+
+            // Si data est null (ex: id n'existe pas ou n'appartient pas au user)
+            if (!data) {
+                return res.status(404).json({ error: "Lead introuvable" });
+            }
+
+            res.json(data); // On renvoie directement l'objet
+        } catch (error) {
+            console.error("Erreur showMyLead:", error);
             res.status(500).json({ error: error.message });
         }
     }
