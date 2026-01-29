@@ -2,22 +2,47 @@ import supabase from '../config/database.js';
 
 class ZoneController {
     // 1. Récupérer toutes les zones (pour l'admin/liste)
+    // src/controllers/zone.controller.js
     static async getAll(req, res) {
         try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 10;
-            const from = (page - 1) * limit;
-            const to = from + limit - 1;
+            const { page, limit, search } = req.query;
 
-            const { data, error, count } = await supabase
+            console.log("🔍 Paramètres reçus du Front:", { page, limit, search });
+
+            const p = parseInt(page) || 1;
+            const l = parseInt(limit) || 10;
+            const from = (p - 1) * l;
+            const to = from + l - 1;
+
+            let query = supabase
                 .from('zones')
-                .select('*', { count: 'exact' })
-                .order('nom', { ascending: true }) // Tri alphabétique plus logique
+                .select('*', { count: 'exact' });
+
+            // LOGIQUE DE RECHERCHE CORRIGÉE
+            if (search && search.trim() !== "") {
+                const s = search.trim();
+                // On cherche dans le nom OU si le CP est présent
+                // Attention : .cs (contains) cherche une correspondance EXACTE dans le tableau
+                // Si tu veux une recherche partielle dans le nom, on utilise ilike
+                query = query.or(`nom.ilike.%${s}%, codes_postaux.cs.{"${s}"}`);
+            }
+
+            const { data, error, count } = await query
+                .order('nom', { ascending: true })
                 .range(from, to);
 
-            if (error) throw error;
-            res.json({ data, totalCount: count, totalPages: Math.ceil(count / limit) });
+            if (error) {
+                console.error("❌ Erreur Supabase Query:", error);
+                throw error;
+            }
+
+            res.json({
+                data,
+                totalCount: count,
+                totalPages: Math.ceil(count / l)
+            });
         } catch (error) {
+            console.error("❌ Erreur Controller:", error.message);
             res.status(500).json({ error: error.message });
         }
     }
@@ -90,11 +115,11 @@ class ZoneController {
     // 5. Voir les zones achetées par l'utilisateur connecté
     static async getMyOwnedZones(req, res) {
         try {
-            const userId = req.user.id; 
+            const userId = req.user.id;
             const { data, error } = await supabase
                 .from('zones')
                 .select('*')
-                .eq('owner_id', userId); 
+                .eq('owner_id', userId);
 
             if (error) throw error;
             res.json(data);
