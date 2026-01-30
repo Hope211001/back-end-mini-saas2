@@ -63,13 +63,33 @@ class WebhookController {
             }
           ], { onConflict: 'user_id' }); 
 
-
         if (insertErrorTemplate) {
           console.error("❌ Erreur Détailée Supabase user config:", insertErrorTemplate);
           throw insertErrorTemplate;
         }
 
-        console.log(`✅ Étape 2/2 : Abonnement créé jusqu'au ${dateFinISO}`);
+
+        // 5. INSERTION subscriptions_details
+          const now = new Date();
+          const created_at = now.toISOString();
+          const { error: insertSubscriptionDetails } = await supabase
+          .from('subscriptions_details')
+          .insert([
+            {
+              user_id : userId,
+              zone_id : zoneId,
+              created_at : created_at ,
+              date_debut :  created_at,
+              date_fin : dateFinISO
+            }
+          ]); 
+
+          if (insertSubscriptionDetails) {
+          console.error("❌ Erreur Détailée Supabase user config:", insertSubscriptionDetails);
+          throw insertErrorTemplate;
+        }
+
+        console.log(`✅ Étape 3/3 : Abonnement créé jusqu'au ${dateFinISO}`);
         console.log(`🚀 --- TRAITEMENT TERMINÉ AVEC SUCCÈS ---\n`);
 
       } catch (dbError) {
