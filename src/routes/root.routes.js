@@ -1,32 +1,38 @@
-// src/routes/root.routes.js (Version ESM)
+// src/routes/root.routes.js
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// Route publique - Page d'accueil
 router.get('/', (req, res) => {
   res.json({
-    message: 'Bienvenue sur l\'API',
+    message: 'Bienvenue sur l\'API de gestion de zones',
     version: '1.0.0',
     endpoints: {
       auth: {
         register: 'POST /api/auth/register',
         login: 'POST /api/auth/login',
-        profile: 'GET /api/auth/profile (protégé)',
-        verify: 'GET /api/auth/verify (protégé)',
+        profile: 'GET /api/auth/profile',
+        updateProfile: 'PUT /api/auth/update-profile', // Ajouté
+        verify: 'GET /api/auth/verify',
+      },
+      zones: {
+        list: 'GET /api/zones',
+        create: 'POST /api/zones (admin only)',
+        myZones: 'GET /api/zones/my/owned (client only)',
       },
       health: 'GET /health',
     },
   });
 });
 
-// Route protégée exemple - Dashboard
-router.get('/dashboard', authenticateToken, (req, res) => {
-  res.json({
-    message: 'Bienvenue sur votre dashboard',
-    user: req.user,
-  });
+// Route de santé pour les déploiements (Render, Railway, etc.)
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP', timestamp: new Date() });
+});
+
+
+router.get('/', (req, res) => {
+  res.json({ status: 'API is running', version: '1.0.0' });
 });
 
 export default router;

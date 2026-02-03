@@ -1,20 +1,22 @@
 import express from 'express';
 import ZoneController from '../controllers/zones.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// 1. Route publique (ou privée) pour afficher l'état de la carte
+// Routes publiques
 router.get('/map-status', ZoneController.getMapStatus);
-
-// 2. Route pour vérifier un code postal lors d'une recherche
 router.get('/check/:cp', ZoneController.checkZoneExclusivity);
 
-// Routes pour gérer les zones
-router.get('/', ZoneController.getAll);
-router.get('/my/owned', authenticateToken, ZoneController.getMyOwnedZones);
-router.post('/', authenticateToken, ZoneController.create);
-router.put('/:id', authenticateToken, ZoneController.update);
-router.delete('/:id', authenticateToken, ZoneController.delete);
+// Routes accessibles par Admin ET Client
+router.get('/', authenticateToken, ZoneController.getAll);
+
+// Routes réservées aux CLIENTS
+router.get('/my/owned', authenticateToken, authorizeRoles('client'), ZoneController.getMyOwnedZones);
+
+// Routes réservées aux ADMINS uniquement
+router.post('/', authenticateToken, authorizeRoles('admin'), ZoneController.create);
+router.put('/:id', authenticateToken, authorizeRoles('admin'), ZoneController.update);
+router.delete('/:id', authenticateToken, authorizeRoles('admin'), ZoneController.delete);
 
 export default router;
