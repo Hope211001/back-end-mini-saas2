@@ -23,13 +23,8 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173", // Pour le dev
-    "https://dark-mode-master-l9902mjkc-fanantenanas-projects-a98ee4c9.vercel.app/"// L'URL que Vercel te donnera pour le front
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  origin: ["https://dark-mode-master-8czl9ary7-fanantenanas-projects-a98ee4c9.vercel.app"], // REMPLACE PAR TON URL FRONTEND VERCEL
+  credentials: true
 }));
 
 
