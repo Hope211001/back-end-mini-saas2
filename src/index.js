@@ -22,9 +22,21 @@ const PORT = process.env.PORT || 5000;
 // }));
 
 
+// 1. CONFIGURATION CORS (Doit être AVANT les routes)
 app.use(cors({
-  origin: ["https://dark-mode-master.vercel.app"], // REMPLACE PAR TON URL FRONTEND VERCEL
-  credentials: true
+  // Autorise ton frontend spécifique + localhost pour le dev
+  origin: function (origin, callback) {
+    // Autorise toutes les requêtes sans origine (comme les outils de test ou mobile)
+    // ou les requêtes venant de ton domaine vercel
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 
