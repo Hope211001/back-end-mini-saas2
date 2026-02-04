@@ -14,12 +14,24 @@ import configRoutes from './routes/config.routes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// app.use(cors({
+//   origin: true, 
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+// }));
+
+
 app.use(cors({
-  origin: true, 
+  origin: [
+    "http://localhost:5173", // Pour le dev
+    "https://dark-mode-master-l9902mjkc-fanantenanas-projects-a98ee4c9.vercel.app/"// L'URL que Vercel te donnera pour le front
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
+
 
 // ==========================================
 // 1. ROUTE WEBHOOK (IMPÉRATIVEMENT ICI)
@@ -56,3 +68,5 @@ app.use('/api/config', configRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
 });
+
+
