@@ -15,11 +15,6 @@ router.get('/', (req, res) => {
         updateProfile: 'PUT /api/auth/update-profile', // Ajouté
         verify: 'GET /api/auth/verify',
       },
-      zones: {
-        list: 'GET /api/zones',
-        create: 'POST /api/zones (admin only)',
-        myZones: 'GET /api/zones/my/owned (client only)',
-      },
       health: 'GET /health',
     },
   });
