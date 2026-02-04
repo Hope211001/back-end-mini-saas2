@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-  origin: ["https://dark-mode-master-8czl9ary7-fanantenanas-projects-a98ee4c9.vercel.app"], // REMPLACE PAR TON URL FRONTEND VERCEL
+  origin: ["https://dark-mode-master.vercel.app"], // REMPLACE PAR TON URL FRONTEND VERCEL
   credentials: true
 }));
 
