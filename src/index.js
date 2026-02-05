@@ -14,12 +14,31 @@ import configRoutes from './routes/config.routes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// app.use(cors({
+//   origin: true, 
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+// }));
+
+
+// 1. CONFIGURATION CORS (Doit être AVANT les routes)
 app.use(cors({
-  origin: true, 
+  // Autorise ton frontend spécifique + localhost pour le dev
+  origin: function (origin, callback) {
+    // Autorise toutes les requêtes sans origine (comme les outils de test ou mobile)
+    // ou les requêtes venant de ton domaine vercel
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // ==========================================
 // 1. ROUTE WEBHOOK (IMPÉRATIVEMENT ICI)
@@ -56,3 +75,5 @@ app.use('/api/config', configRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
 });
+
+

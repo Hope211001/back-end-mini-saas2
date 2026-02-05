@@ -155,7 +155,7 @@ class AuthController {
     res.status(200).json({ message: 'Déconnexion réussie' });
   }
 
-  static async verifyToken(req, res) {
+   static async verifyToken(req, res) {
     res.json({ valid: true, user: req.user });
   }
 }
