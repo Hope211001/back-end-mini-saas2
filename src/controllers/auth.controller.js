@@ -154,6 +154,10 @@ class AuthController {
   static async logout(req, res) {
     res.status(200).json({ message: 'Déconnexion réussie' });
   }
+
+  static async verifyToken(req, res) {
+    res.json({ valid: true, user: req.user });
+  }
 }
 
 export default AuthController;
