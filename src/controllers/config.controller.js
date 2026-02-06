@@ -37,7 +37,6 @@ class ConfigController {
       const { 
         loyer_max, 
         surface_min, 
-        auto_contact, 
         template_msg_1, 
         template_msg_2, 
         template_msg_3 
@@ -49,7 +48,6 @@ class ConfigController {
           user_id: userId, // La clé primaire UUID
           loyer_max,
           surface_min,
-          auto_contact,
           template_msg_1,
           template_msg_2,
           template_msg_3,

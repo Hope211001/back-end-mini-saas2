@@ -150,6 +150,58 @@ class ZoneController {
             res.status(500).json({ error: error.message });
         }
     }
+
+
+    // Compter TOUTES les zones
+    static async countAllZone(req, res) {
+        try {
+            // "head: true" signifie : ne récupère pas les données, donne juste le nombre (plus rapide)
+            const { count, error } = await supabase
+                .from('zones')
+                .select('*', { count: 'exact'});
+
+            if (error) throw error;
+            
+            // On renvoie le vrai chiffre
+            res.json({ count: count || 0 });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Compter les zones LIBRES
+    static async countZoneLibre(req, res) {
+        try {
+            const { count, error } = await supabase
+                .from('zones')
+                .select('*', { count: 'exact'})
+                .eq('statut_market', 'LIBRE');
+
+            if (error) throw error;
+            
+            res.json({ count: count || 0 });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Compter les zones VENDUES
+    static async countZoneVendu(req, res) {
+        try {
+            const { count, error } = await supabase
+                .from('zones')
+                .select('*', { count: 'exact' })
+                .eq('statut_market', 'VENDU'); // Assure-toi que c'est bien 'VENDU' et pas 'vendu' dans ta base
+
+            if (error) throw error;
+            
+            res.json({ count: count || 0 });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
 }
 
 export default ZoneController;

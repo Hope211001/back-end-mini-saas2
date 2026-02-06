@@ -8,6 +8,12 @@ const router = express.Router();
 router.get('/map-status', ZoneController.getMapStatus);
 router.get('/check/:cp', ZoneController.checkZoneExclusivity);
 
+//compte
+// Autorise 'client' ET 'admin'
+router.get('/countAllZone', authenticateToken, authorizeRoles('client', 'admin'), ZoneController.countAllZone);
+router.get('/countZoneLibre', authenticateToken, authorizeRoles('client', 'admin'), ZoneController.countZoneLibre);
+router.get('/countZoneVendu', authenticateToken, authorizeRoles('client', 'admin'), ZoneController.countZoneVendu);
+
 // Routes accessibles par Admin ET Client
 router.get('/', authenticateToken, ZoneController.getAll);
 
