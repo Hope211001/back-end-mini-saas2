@@ -10,6 +10,7 @@ import paymentRoutes from './routes/payment.routes.js';
 import zoneRoutes from './routes/zones.routes.js';
 import leadRoutes from './routes/leads.routes.js'; 
 import configRoutes from './routes/config.routes.js';
+import subscriptionRoutes from './routes/subscription.routes.js'
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -69,8 +70,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentRoutes); // Le webhook n'est plus dedans
 app.use('/api/zones', zoneRoutes);
 app.use('/api/leads', leadRoutes);
-app.use('/api', rootRoutes); 
 app.use('/api/config', configRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api', rootRoutes); 
 
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
