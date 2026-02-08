@@ -20,8 +20,8 @@ const transporter = nodemailer.createTransport({
 });
 
 
-class AuthController {
 
+class AuthController {
   // ==========================================
   // HELPER : FONCTION D'ENVOI D'EMAIL
   // ==========================================
@@ -85,14 +85,10 @@ class AuthController {
     }
   }
 
-  // --- 2. GOOGLE AUTH (Séparation Connexion / Inscription) ---
+  // --- 2. GOOGLE AUTH ---
   static async googleAuth(req, res) {
     try {
-      const { credential, mode } = req.body; // On récupère le "mode" (login ou register)
-      //date d'aujourd'huit
-      const now = new Date();
-      const created_at = now.toISOString();
-
+      const { credential } = req.body;
       const ticket = await googleClient.verifyIdToken({
         idToken: credential,
         audience: process.env.GOOGLE_CLIENT_ID
@@ -101,69 +97,42 @@ class AuthController {
       const { email, name, sub: google_id } = ticket.getPayload();
       const normalizedEmail = email.toLowerCase().trim();
 
-      // 1. Chercher si l'utilisateur existe déjà
       let { data: user } = await supabase.from('users').select('*').eq('email', normalizedEmail).maybeSingle();
 
-      // ==========================================
-      // CAS DU LOGIN (Connexion)
-      // ==========================================
-      if (mode === 'login') {
-        if (!user) {
-          return res.status(404).json({
-            error: "Aucun compte trouvé avec cet email. Veuillez d'abord vous inscrire."
-          });
-        }
-
-        if (user.is_verified === false) {
-          // Renvoi de l'email si non vérifié
-          const newToken = crypto.randomBytes(32).toString('hex');
-          await supabase.from('users').update({ verification_token: newToken }).eq('id', user.id);
-          await AuthController.sendVerificationEmail(user.email, user.name, newToken, user.id);
-
-          return res.status(403).json({
-            error: 'Compte non activé. Un email de vérification vous a été renvoyé.',
-            requiresVerification: true
-          });
-        }
-
-        // Tout est OK -> Connexion
-        const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        return res.json({ token, user });
-      }
-
-      // ==========================================
-      // CAS DU REGISTER (Inscription)
-      // ==========================================
-      if (mode === 'register') {
-        if (user) {
-          return res.status(400).json({
-            error: "Un compte existe déjà avec cet email. Connectez-vous plutôt."
-          });
-        }
-
-        // Création du nouvel utilisateur
+      if (!user) {
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const { data: newUser, error: insError } = await supabase
           .from('users')
-          .insert([{
-            email: normalizedEmail,
-            name,
-            google_id,
-            is_verified: false,
-            verification_token: verificationToken,
-            role: 'client'
-          }])
+          .insert([{ email: normalizedEmail, name, google_id, is_verified: false, verification_token: verificationToken, role: 'client' }])
           .select().single();
 
         if (insError) throw insError;
+        user = newUser;
 
-        await AuthController.sendVerificationEmail(newUser.email, newUser.name, verificationToken, newUser.id);
+        // ✅ CHANGEMENT ICI : AuthController au lieu de this
+        await AuthController.sendVerificationEmail(user.email, user.name, verificationToken, user.id);
 
         return res.status(201).json({
-          message: 'Inscription réussie ! Vérifiez vos emails pour activer votre compte.',
+          message: 'Compte créé avec Google. Veuillez vérifier votre email.',
+          requiresVerification: true
+        });
+
+      } else if (user.is_verified === false) {
+        console.log("🔄 Renvoi du mail pour utilisateur existant non vérifié");
+        const newToken = crypto.randomBytes(32).toString('hex');
+        await supabase.from('users').update({ verification_token: newToken }).eq('id', user.id);
+
+        // ✅ CHANGEMENT ICI : AuthController au lieu de this
+        await AuthController.sendVerificationEmail(user.email, user.name, newToken, user.id);
+
+        return res.status(403).json({
+          error: 'Compte non activé. Un nouvel email vous a été envoyé.',
           requiresVerification: true
         });
       }
+
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      res.json({ token, user });
 
     } catch (error) {
       console.error("Google Auth Error:", error);
@@ -171,6 +140,7 @@ class AuthController {
     }
   }
 
+  
   // --- 3. LOGIN MANUEL ---
   static async login(req, res) {
     try {
