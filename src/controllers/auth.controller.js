@@ -70,7 +70,15 @@ class AuthController {
 
       const { data: newUser, error } = await supabase
         .from('users')
-        .insert([{ email: normalizedEmail, password: hashedPassword, name, verification_token: verificationToken, is_verified: false, role: 'client' }])
+        .insert([{
+          email: normalizedEmail,
+          password: hashedPassword,
+          name,
+          verification_token: verificationToken,
+          is_verified: false,
+          role: req.body.role || 'client', // Utilise le rôle envoyé par le formulaire
+          statut: 'ACTIF'
+        }])
         .select().single();
 
       if (error) throw error;
@@ -250,6 +258,7 @@ class AuthController {
       res.status(500).json({ error: 'Erreur lors de la mise à jour' });
     }
   }
+
 
   // --- 6. VÉRIFICATION DU TOKEN (utilisé par le Front au rafraîchissement) ---
   static async verifyToken(req, res) {
