@@ -4,11 +4,12 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware
 
 const router = express.Router();
 
+//pour super admin
+router.get('/', authenticateToken,authorizeRoles('admin'), LeadController.getAll);
 // Récupérer la liste
 router.get('/my', authenticateToken,authorizeRoles('admin','client'), LeadController.getMyLeads);
-
 // Récupérer un seul lead (Détail)
-// URL Finale sera : /api/leads/my/:id
 router.get('/my/:id', authenticateToken,authorizeRoles('admin','client'), LeadController.showMyLead);
+
 
 export default router;

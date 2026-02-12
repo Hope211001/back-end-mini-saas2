@@ -1,7 +1,6 @@
 import supabase from '../config/database.js';
 
 class LeadController {
-    // Pour l'admin : voir tous les leads de la plateforme
     static async getAll(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
@@ -22,7 +21,6 @@ class LeadController {
         }
     }
 
-    // Pour l'utilisateur : voir uniquement SES leads
     static async getMyLeads(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
