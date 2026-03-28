@@ -54,23 +54,26 @@ class LeadController {
     static async showMyLead(req, res) {
         try {
             const userId = req.user.id;
-            const { id } = req.params; // On récupère l'ID depuis l'URL (/my/:id)
+            const { id } = req.params;
 
             const { data, error } = await supabase
                 .from('leads')
-                .select('*')
-                .eq('id', id)                   // 1. Filtrer par ID du lead
-                .eq('assigned_user_id', userId) // 2. SÉCURITÉ : Vérifier que ça appartient au user
-                .single();                      // 3. On veut un seul objet, pas un tableau
+                .select(`
+                *,
+                zones (nom),
+                users (email)
+            `) // On demande toutes les colonnes de leads + le nom de la zone + l'email de l'user
+                .eq('id', id)
+                .eq('assigned_user_id', userId)
+                .single();
 
             if (error) throw error;
 
-            // Si data est null (ex: id n'existe pas ou n'appartient pas au user)
             if (!data) {
                 return res.status(404).json({ error: "Lead introuvable" });
             }
 
-            res.json(data); // On renvoie directement l'objet
+            res.json(data);
         } catch (error) {
             console.error("Erreur showMyLead:", error);
             res.status(500).json({ error: error.message });
