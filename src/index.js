@@ -15,6 +15,7 @@ import configRoutes from './routes/config.routes.js';
 import subscriptionRoutes from './routes/subscription.routes.js';
 import userRoutes from './routes/user.routes.js';
 import notificationRoutes from './routes/notification.routes.js'; // <--- AJOUT ROUTE
+import invoicesRoutes from './routes/invoices.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -89,6 +90,7 @@ app.use('/api/config', configRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes); // <--- AJOUT
+app.use('/api/invoices', invoicesRoutes);
 app.use('/api', rootRoutes); 
 
 // ==========================================

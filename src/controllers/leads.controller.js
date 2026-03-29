@@ -28,21 +28,39 @@ class LeadController {
             const from = (page - 1) * limit;
             const to = from + limit - 1;
 
-            const userId = req.user.id; // Extrait du JWT
+            const userId = req.user.id;
+            const { search, statut, phone, sort } = req.query;
 
-            const { data, error, count } = await supabase
+            const ascending = sort === 'asc';
+
+            let query = supabase
                 .from('leads')
                 .select('*', { count: 'exact' })
-                .eq('assigned_user_id', userId) // Utilisation de la bonne colonne
-                .order('date_detection', { ascending: false })
-                .range(from, to);
+                .eq('assigned_user_id', userId)
+                .order('date_detection', { ascending });
+
+            if (search) {
+                query = query.or(`titre.ilike.%${search}%,ville.ilike.%${search}%`);
+            }
+
+            if (statut && statut !== 'all') {
+                query = query.eq('statut_prospection', statut);
+            }
+
+            if (phone === 'with_phone') {
+                query = query.not('phone', 'is', null).neq('phone', '');
+            } else if (phone === 'without_phone') {
+                query = query.or('phone.is.null,phone.eq.');
+            }
+
+            const { data, error, count } = await query.range(from, to);
 
             if (error) throw error;
 
             res.json({
                 data,
                 totalCount: count,
-                totalPages: Math.ceil(count / (limit || 1))
+                totalPages: Math.ceil(count / limit)
             });
         } catch (error) {
             console.error("Erreur getMyLeads:", error);
