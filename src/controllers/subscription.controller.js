@@ -1,7 +1,7 @@
+// src/controllers/subscription.controller.js
 import supabase from '../config/database.js';
 
 class SubscriptionController {
-    // src/controllers/subscription.controller.js
 
     static async getSubscriptionByZone(req, res) {
         try {
@@ -9,23 +9,33 @@ class SubscriptionController {
             const { zoneId } = req.params;
 
             const { data, error } = await supabase
-                .from('subscriptions')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('zone_id', zoneId)
-                .maybeSingle(); // <--- CHANGER ICI (au lieu de .single())
+                .from('zones') // IMPORTANT : On lit dans 'zones'
+                .select(`
+                id, 
+                owner_id, 
+                nom, 
+                auto_contact_enabled, 
+                price_max_filter, 
+                price_min_filter, 
+                surface_min_filter, 
+                "searchQuery", 
+                category_id, 
+                radius, 
+                template_message
+            `)
+                .eq('id', zoneId)
+                .eq('owner_id', userId) // Sécurité
+                .maybeSingle();
 
             if (error) throw error;
 
-            // Si aucune souscription n'est trouvée, on renvoie un objet par défaut 
-            // ou un message clair au lieu d'une erreur 500
             if (!data) {
-                return res.status(404).json({ error: "Aucun abonnement trouvé pour cette zone" });
+                return res.status(404).json({ error: "Zone non trouvée" });
             }
 
             res.json(data);
         } catch (error) {
-            console.error("Erreur serveur:", error.message);
+            console.error("Erreur Backend:", error.message);
             res.status(500).json({ error: error.message });
         }
     }
@@ -34,13 +44,24 @@ class SubscriptionController {
         try {
             const userId = req.user.id;
             const { zoneId } = req.params;
-            const { auto_contact_enabled } = req.body;
+            const body = req.body;
+
+            const updateData = {
+                auto_contact_enabled: !!body.auto_contact_enabled,
+                searchQuery: body.searchQuery || "",
+                price_min_filter: (body.price_min_filter !== "" && body.price_min_filter !== null) ? parseInt(body.price_min_filter, 10) : null,
+                price_max_filter: (body.price_max_filter !== "" && body.price_max_filter !== null) ? parseInt(body.price_max_filter, 10) : null,
+                surface_min_filter: (body.surface_min_filter !== "" && body.surface_min_filter !== null) ? parseInt(body.surface_min_filter, 10) : null,
+                radius: (body.radius !== "" && body.radius !== null) ? parseInt(body.radius, 10) : null,
+                category_id: body.category_id ? parseInt(body.category_id, 10) : null,
+                template_message: body.template_message || "",
+            };
 
             const { data, error } = await supabase
-                .from('subscriptions')
-                .update({ auto_contact_enabled })
-                .eq('user_id', userId)
-                .eq('zone_id', zoneId)
+                .from('zones') // <--- ON ÉCRIT DANS 'ZONES'
+                .update(updateData)
+                .eq('id', zoneId)
+                .eq('owner_id', userId)
                 .select()
                 .single();
 
