@@ -27,7 +27,7 @@ const server = http.createServer(app); // On enveloppe l'app Express
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5173", "https://dark-mode-master.vercel.app"], // AJOUTE TES URLS FRONT
-    methods: ["GET", "POST", "PUT"],
+    methods: ["GET", "POST", "PUT", "PATCH"],
     credentials: true
   }
 });
@@ -68,7 +68,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

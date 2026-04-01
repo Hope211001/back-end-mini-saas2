@@ -6,21 +6,20 @@ class NotificationController {
         try {
             const userId = req.user.id;
 
-            // ON UTILISE 'date_detection' AU LIEU DE 'created_at'
             const { data, error } = await supabase
                 .from('leads')
-                .select('*') 
+                .select('*')
                 .eq('assigned_user_id', userId)
-                .order('date_detection', { ascending: false }) // Tri par date de détection
+                .order('date_detection', { ascending: false })
                 .limit(20);
 
             if (error) throw error;
 
             const unreadCount = data.filter(n => !n.is_read).length;
 
-            res.json({ 
-                notifications: data, 
-                unreadCount 
+            res.json({
+                notifications: data,
+                unreadCount
             });
 
         } catch (error) {
