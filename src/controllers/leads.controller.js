@@ -52,7 +52,10 @@ class LeadController {
             }
 
             if (exclude_statut) {
-                query = query.neq('statut', exclude_statut);
+                const excludes = exclude_statut.split(',');
+                for (const ex of excludes) {
+                    query = query.neq('statut', ex.trim());
+                }
             }
 
             if (phone === 'with_phone') {
@@ -147,7 +150,7 @@ class LeadController {
             const { id } = req.params;
             const { statut } = req.body;
 
-            const validStatuts = ['new', 'contacted', 'replied', 'rejected'];
+            const validStatuts = ['new', 'contacted', 'replied', 'rejected', 'unreachable'];
             if (!validStatuts.includes(statut)) {
                 return res.status(400).json({ error: `Statut invalide. Valeurs acceptées : ${validStatuts.join(', ')}` });
             }
@@ -193,7 +196,10 @@ class LeadController {
                 query = query.eq('statut', statut);
             }
             if (exclude_statut) {
-                query = query.neq('statut', exclude_statut);
+                const excludes = exclude_statut.split(',');
+                for (const ex of excludes) {
+                    query = query.neq('statut', ex.trim());
+                }
             }
             if (phone === 'with_phone') {
                 query = query.not('phone', 'is', null).neq('phone', '');
