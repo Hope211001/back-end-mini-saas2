@@ -58,6 +58,50 @@ class LeadController {
         }
     }
 
+    static async getLeadsByUser(req, res) {
+        try {
+            const { userId } = req.params;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const from = (page - 1) * limit;
+            const to = from + limit - 1;
+            const { search, statut, phone, sort, ville } = req.query;
+
+            const ascending = sort === 'asc';
+
+            let query = supabase
+                .from('leads')
+                .select('*', { count: 'exact' })
+                .eq('assigned_user_id', userId)
+                .order('date_detection', { ascending });
+
+            if (search) {
+                query = query.or(`titre.ilike.%${search}%,ville.ilike.%${search}%`);
+            }
+
+            if (statut && statut !== 'all') {
+                query = query.eq('statut', statut);
+            }
+
+            if (ville && ville !== 'all') {
+                query = query.eq('ville', ville);
+            }
+
+            if (phone === 'with_phone') {
+                query = query.not('phone', 'is', null).neq('phone', '');
+            } else if (phone === 'without_phone') {
+                query = query.or('phone.is.null,phone.eq.');
+            }
+
+            const { data, error, count } = await query.range(from, to);
+
+            if (error) throw error;
+            res.json({ data, totalCount: count, totalPages: Math.ceil(count / limit) });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     static async getMyLeads(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
