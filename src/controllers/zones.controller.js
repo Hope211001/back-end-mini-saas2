@@ -5,9 +5,7 @@ class ZoneController {
     // src/controllers/zone.controller.js
     static async getAll(req, res) {
         try {
-            const { page, limit, search } = req.query;
-
-            console.log("🔍 Paramètres reçus du Front:", { page, limit, search });
+            const { page, limit, search, statut } = req.query;
 
             const p = parseInt(page) || 1;
             const l = parseInt(limit) || 10;
@@ -25,6 +23,10 @@ class ZoneController {
                 // Attention : .cs (contains) cherche une correspondance EXACTE dans le tableau
                 // Si tu veux une recherche partielle dans le nom, on utilise ilike
                 query = query.or(`nom.ilike.%${s}%, codes_postaux.cs.{"${s}"}`);
+            }
+
+            if (statut && statut !== "all") {
+                query = query.eq('statut_market', statut);
             }
 
             const { data, error, count } = await query
