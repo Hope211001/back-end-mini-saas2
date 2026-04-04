@@ -7,15 +7,52 @@ class LeadController {
             const limit = parseInt(req.query.limit) || 10;
             const from = (page - 1) * limit;
             const to = from + limit - 1;
+            const { search, statut, phone, sort, ville } = req.query;
 
-            const { data, error, count } = await supabase
+            const ascending = sort === 'asc';
+
+            let query = supabase
                 .from('leads')
                 .select('*', { count: 'exact' })
-                .order('date_detection', { ascending: false })
-                .range(from, to);
+                .order('date_detection', { ascending });
+
+            if (search) {
+                query = query.or(`titre.ilike.%${search}%,ville.ilike.%${search}%`);
+            }
+
+            if (statut && statut !== 'all') {
+                query = query.eq('statut', statut);
+            }
+
+            if (ville && ville !== 'all') {
+                query = query.eq('ville', ville);
+            }
+
+            if (phone === 'with_phone') {
+                query = query.not('phone', 'is', null).neq('phone', '');
+            } else if (phone === 'without_phone') {
+                query = query.or('phone.is.null,phone.eq.');
+            }
+
+            const { data, error, count } = await query.range(from, to);
 
             if (error) throw error;
             res.json({ data, totalCount: count, totalPages: Math.ceil(count / limit) });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getDistinctVilles(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('ville');
+
+            if (error) throw error;
+
+            const villes = [...new Set(data.map(d => d.ville).filter(Boolean))].sort();
+            res.json(villes);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

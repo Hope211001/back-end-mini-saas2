@@ -159,7 +159,8 @@ class AuthController {
             google_id,
             is_verified: false,
             verification_token: verificationToken,
-            role: 'client'
+            role: 'client',
+            statut: 'ACTIF'
           }])
           .select().single();
 
@@ -260,7 +261,50 @@ class AuthController {
   }
 
 
-  // --- 6. VÉRIFICATION DU TOKEN (utilisé par le Front au rafraîchissement) ---
+  // --- 6. CHANGEMENT DE MOT DE PASSE ---
+  static async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Tous les champs sont requis' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères' });
+      }
+
+      const { data: user } = await supabase
+        .from('users')
+        .select('password')
+        .eq('id', req.user.id)
+        .single();
+
+      if (!user || !user.password) {
+        return res.status(400).json({ error: 'Impossible de modifier le mot de passe (compte Google uniquement)' });
+      }
+
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const { error } = await supabase
+        .from('users')
+        .update({ password: hashedPassword })
+        .eq('id', req.user.id);
+
+      if (error) throw error;
+
+      res.json({ message: 'Mot de passe modifié avec succès' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({ error: 'Erreur lors du changement de mot de passe' });
+    }
+  }
+
+  // --- 7. VÉRIFICATION DU TOKEN (utilisé par le Front au rafraîchissement) ---
   static async verifyToken(req, res) {
     // req.user est rempli par le middleware authenticateToken
     return res.json({

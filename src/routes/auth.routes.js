@@ -15,5 +15,6 @@ router.post('/logout', AuthController.logout); // Utilise la méthode logout ajo
 router.get('/profile', authenticateToken, AuthController.getProfile);
 router.get('/verify', authenticateToken, AuthController.verifyToken); // Utilise la méthode verifyToken
 router.put('/update-profile', authenticateToken, AuthController.updateProfile);
+router.put('/change-password', authenticateToken, AuthController.changePassword);
 
 export default router;

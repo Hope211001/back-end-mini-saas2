@@ -6,6 +6,7 @@ const router = express.Router();
 
 //pour super admin
 router.get('/', authenticateToken,authorizeRoles('admin'), LeadController.getAll);
+router.get('/villes', authenticateToken,authorizeRoles('admin'), LeadController.getDistinctVilles);
 // Récupérer la liste
 router.get('/my', authenticateToken,authorizeRoles('admin','client'), LeadController.getMyLeads);
 // Export CSV avec les mêmes filtres
