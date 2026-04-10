@@ -110,7 +110,7 @@ class LeadController {
             const to = from + limit - 1;
 
             const userId = req.user.id;
-            const { search, statut, phone, sort, zone_id, exclude_statut } = req.query;
+            const { search, statut, phone, sort, zone_id, exclude_statut, categorie } = req.query;
 
             const ascending = sort === 'asc';
 
@@ -130,6 +130,10 @@ class LeadController {
 
             if (statut && statut !== 'all') {
                 query = query.eq('statut', statut);
+            }
+
+            if (categorie && categorie !== 'all') {
+                query = query.eq('categorie_scraping', categorie);
             }
 
             if (exclude_statut) {
@@ -207,8 +211,12 @@ class LeadController {
             if (error) throw error;
             if (!lead) return res.status(404).json({ error: "Lead introuvable" });
 
-            // Appeler le webhook n8n avec le lead + message
-            const webhookRes = await fetch('https://n8n.srv903010.hstgr.cloud/webhook/contact-manuel', {
+            // Choix du webhook selon la catégorie du lead
+            const webhookUrl = lead.categorie_scraping === 'pap.fr'
+                ? 'https://n8n.srv903010.hstgr.cloud/webhook/contact-avec-pap'
+                : 'https://n8n.srv903010.hstgr.cloud/webhook/contact-manuel';
+
+            const webhookRes = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...lead, message: message || '' }),
@@ -257,7 +265,7 @@ class LeadController {
     static async exportCSV(req, res) {
         try {
             const userId = req.user.id;
-            const { search, statut, phone, sort, zone_id, exclude_statut } = req.query;
+            const { search, statut, phone, sort, zone_id, exclude_statut, categorie } = req.query;
 
             const ascending = sort === 'asc';
 
@@ -275,6 +283,9 @@ class LeadController {
             }
             if (statut && statut !== 'all') {
                 query = query.eq('statut', statut);
+            }
+            if (categorie && categorie !== 'all') {
+                query = query.eq('categorie_scraping', categorie);
             }
             if (exclude_statut) {
                 const excludes = exclude_statut.split(',');
