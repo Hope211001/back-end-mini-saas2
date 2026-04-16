@@ -7,6 +7,7 @@ const router = express.Router();
 //pour super admin
 router.get('/', authenticateToken,authorizeRoles('admin'), LeadController.getAll);
 router.get('/villes', authenticateToken,authorizeRoles('admin'), LeadController.getDistinctVilles);
+router.get('/categories', authenticateToken,authorizeRoles('admin'), LeadController.getDistinctCategories);
 router.get('/user/:userId', authenticateToken,authorizeRoles('admin'), LeadController.getLeadsByUser);
 // Récupérer la liste
 router.get('/my', authenticateToken,authorizeRoles('admin','client'), LeadController.getMyLeads);

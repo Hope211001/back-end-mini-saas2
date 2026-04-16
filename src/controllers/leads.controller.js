@@ -7,7 +7,7 @@ class LeadController {
             const limit = parseInt(req.query.limit) || 10;
             const from = (page - 1) * limit;
             const to = from + limit - 1;
-            const { search, statut, phone, sort, ville } = req.query;
+            const { search, statut, phone, sort, ville, categorie } = req.query;
 
             const ascending = sort === 'asc';
 
@@ -26,6 +26,10 @@ class LeadController {
 
             if (ville && ville !== 'all') {
                 query = query.eq('ville', ville);
+            }
+
+            if (categorie && categorie !== 'all') {
+                query = query.eq('categorie_scraping', categorie);
             }
 
             if (phone === 'with_phone') {
@@ -53,6 +57,21 @@ class LeadController {
 
             const villes = [...new Set(data.map(d => d.ville).filter(Boolean))].sort();
             res.json(villes);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getDistinctCategories(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('categorie_scraping');
+
+            if (error) throw error;
+
+            const categories = [...new Set(data.map(d => d.categorie_scraping).filter(Boolean))].sort();
+            res.json(categories);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
