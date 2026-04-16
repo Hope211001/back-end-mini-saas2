@@ -47,6 +47,161 @@ class LeadController {
         }
     }
 
+    static async getStatsByPhone(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('date_detection, phone');
+
+            if (error) throw error;
+
+            const dailyMap = {};
+            const monthlyMap = {};
+
+            for (const lead of data) {
+                const date = lead.date_detection ? lead.date_detection.substring(0, 10) : null;
+                if (!date) continue;
+                const month = date.substring(0, 7);
+                const hasPhone = lead.phone && lead.phone.trim() !== '';
+                const key = hasPhone ? 'avec_tel' : 'sans_tel';
+
+                if (!dailyMap[date]) dailyMap[date] = { avec_tel: 0, sans_tel: 0 };
+                dailyMap[date][key]++;
+
+                if (!monthlyMap[month]) monthlyMap[month] = { avec_tel: 0, sans_tel: 0 };
+                monthlyMap[month][key]++;
+            }
+
+            const daily = Object.entries(dailyMap)
+                .map(([date, vals]) => ({ date, ...vals }))
+                .sort((a, b) => a.date.localeCompare(b.date));
+
+            const monthly = Object.entries(monthlyMap)
+                .map(([month, vals]) => ({ month, ...vals }))
+                .sort((a, b) => a.month.localeCompare(b.month));
+
+            res.json({ daily, monthly });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getStatsByUser(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('assigned_user_id, users:assigned_user_id (name, email)');
+
+            if (error) throw error;
+
+            const userMap = {};
+            for (const lead of data) {
+                const userId = lead.assigned_user_id;
+                if (!userId) continue;
+                if (!userMap[userId]) {
+                    userMap[userId] = {
+                        id: userId,
+                        name: lead.users?.name || 'Sans nom',
+                        email: lead.users?.email || '',
+                        count: 0,
+                    };
+                }
+                userMap[userId].count++;
+            }
+
+            const result = Object.values(userMap).sort((a, b) => b.count - a.count);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getStatsByVille(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('ville');
+
+            if (error) throw error;
+
+            const villeMap = {};
+            for (const lead of data) {
+                const ville = lead.ville || 'Inconnue';
+                villeMap[ville] = (villeMap[ville] || 0) + 1;
+            }
+
+            const result = Object.entries(villeMap)
+                .map(([ville, count]) => ({ ville, count }))
+                .sort((a, b) => b.count - a.count);
+
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getStats(req, res) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('date_detection, categorie_scraping');
+
+            if (error) throw error;
+
+            const dailyMap = {};
+            const monthlyMap = {};
+
+            for (const lead of data) {
+                const cat = lead.categorie_scraping || 'autre';
+                const date = lead.date_detection ? lead.date_detection.substring(0, 10) : null;
+                if (!date) continue;
+                const month = date.substring(0, 7);
+
+                if (!dailyMap[date]) dailyMap[date] = {};
+                dailyMap[date][cat] = (dailyMap[date][cat] || 0) + 1;
+
+                if (!monthlyMap[month]) monthlyMap[month] = {};
+                monthlyMap[month][cat] = (monthlyMap[month][cat] || 0) + 1;
+            }
+
+            const daily = Object.entries(dailyMap)
+                .map(([date, cats]) => ({ date, ...cats }))
+                .sort((a, b) => a.date.localeCompare(b.date));
+
+            const monthly = Object.entries(monthlyMap)
+                .map(([month, cats]) => ({ month, ...cats }))
+                .sort((a, b) => a.month.localeCompare(b.month));
+
+            res.json({ daily, monthly });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async showLead(req, res) {
+        try {
+            const { id } = req.params;
+
+            const { data, error } = await supabase
+                .from('leads')
+                .select(`
+                    *,
+                    zones (nom),
+                    users:assigned_user_id (id, name, email)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            if (!data) return res.status(404).json({ error: "Lead introuvable" });
+
+            res.json(data);
+        } catch (error) {
+            console.error("Erreur showLead:", error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     static async getDistinctVilles(req, res) {
         try {
             const { data, error } = await supabase

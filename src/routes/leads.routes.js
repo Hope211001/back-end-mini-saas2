@@ -8,6 +8,11 @@ const router = express.Router();
 router.get('/', authenticateToken,authorizeRoles('admin'), LeadController.getAll);
 router.get('/villes', authenticateToken,authorizeRoles('admin'), LeadController.getDistinctVilles);
 router.get('/categories', authenticateToken,authorizeRoles('admin'), LeadController.getDistinctCategories);
+router.get('/stats', authenticateToken,authorizeRoles('admin'), LeadController.getStats);
+router.get('/stats/villes', authenticateToken,authorizeRoles('admin'), LeadController.getStatsByVille);
+router.get('/stats/users', authenticateToken,authorizeRoles('admin'), LeadController.getStatsByUser);
+router.get('/stats/phone', authenticateToken,authorizeRoles('admin'), LeadController.getStatsByPhone);
+router.get('/show/:id', authenticateToken,authorizeRoles('admin'), LeadController.showLead);
 router.get('/user/:userId', authenticateToken,authorizeRoles('admin'), LeadController.getLeadsByUser);
 // Récupérer la liste
 router.get('/my', authenticateToken,authorizeRoles('admin','client'), LeadController.getMyLeads);
