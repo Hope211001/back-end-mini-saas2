@@ -7,9 +7,21 @@ class WebhookController {
     const sig = req.headers['stripe-signature'];
     let event;
 
+    console.log('🔔 Webhook Stripe reçu');
+    console.log('  - signature présente:', !!sig);
+    console.log('  - body est Buffer:', Buffer.isBuffer(req.body));
+    console.log('  - STRIPE_WEBHOOK_SECRET défini:', !!process.env.STRIPE_WEBHOOK_SECRET);
+
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET manquant dans les variables d\'environnement');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      console.log(`✅ Signature vérifiée — event type: ${event.type}`);
     } catch (err) {
+      console.error('❌ Erreur vérification signature:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 

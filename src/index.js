@@ -100,6 +100,13 @@ app.use('/api', rootRoutes);
 // ==========================================
 // DÉMARRAGE (Utiliser server.listen et pas app.listen)
 // ==========================================
-server.listen(PORT, () => {
-  console.log(`🚀 Serveur + Socket.io démarré sur http://localhost:${PORT}`);
-});
+// En local : on démarre le serveur HTTP + Socket.IO.
+// Sur Vercel serverless : pas de server.listen(), Vercel appelle directement le handler exporté.
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Serveur + Socket.io démarré sur http://localhost:${PORT}`);
+  });
+}
+
+// Export requis pour Vercel serverless (@vercel/node)
+export default app;
