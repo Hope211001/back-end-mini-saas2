@@ -30,6 +30,14 @@ class PaymentController {
         return res.status(400).json({ error: "Le prix de cette ville n'est pas configuré" });
       }
 
+      // URL de base du front : en priorité l'Origin du navigateur (marche en local ET en prod),
+      // sinon la variable d'env FRONTEND_URL, sinon fallback localhost
+      const frontendUrl =
+        req.headers.origin ||
+        req.headers.referer?.replace(/\/$/, '') ||
+        process.env.FRONTEND_URL ||
+        'http://localhost:8080';
+
       // 2. Création de la session Stripe
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -41,14 +49,14 @@ class PaymentController {
                 name: `Achat ville : ${zone.nom}`,
               },
               // On s'assure que c'est un entier (centimes)
-              unit_amount: Math.round(priceValue * 100), 
+              unit_amount: Math.round(priceValue * 100),
             },
             quantity: 1,
           },
         ],
         mode: 'payment',
-        success_url: `http://localhost:8080/client/zones`,
-        cancel_url: `http://localhost:8080/client/buy-zone`,
+        success_url: `${frontendUrl}/client/zones`,
+        cancel_url: `${frontendUrl}/client/buy-zone`,
         metadata: {
           userId: userId,
           zoneId: zoneId.toString() // On s'assure que c'est une string pour les metadata
