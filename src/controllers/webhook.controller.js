@@ -27,11 +27,18 @@ class WebhookController {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const { userId, zoneId } = session.metadata;
+      const { userId, zoneId } = session.metadata || {};
 
       console.log(`\n📦 --- DÉBUT TRAITEMENT WEBHOOK ---`);
       console.log(`👤 User ID: ${userId}`);
       console.log(`🗺️ Zone ID: ${zoneId}`);
+
+      // Ignorer les événements sans metadata (ex: tests CLI stripe trigger).
+      // On répond 200 pour que Stripe ne réessaie pas indéfiniment.
+      if (!userId || !zoneId) {
+        console.warn('⚠️ Metadata manquant (userId ou zoneId). Event ignoré.');
+        return res.json({ received: true, skipped: 'missing metadata' });
+      }
 
       try {
         // 1. CALCUL DE LA DATE (1 mois à partir d'aujourd'hui)
