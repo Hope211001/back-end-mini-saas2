@@ -1,5 +1,44 @@
 import supabase from '../config/database.js';
 
+async function recomputeCoverage() {
+    const { data: zones, error } = await supabase.from('zones').select('id, type, codes_postaux, codes_postaux_originaux');
+    if (error) throw error;
+
+    const arrondissementCps = new Set();
+    const villeOriginauxCps = new Set();
+    for (const z of zones) {
+        const originaux = z.codes_postaux_originaux || z.codes_postaux || [];
+        if (z.type === 'arrondissement') {
+            originaux.forEach(cp => arrondissementCps.add(cp));
+        } else if (z.type === 'ville') {
+            originaux.forEach(cp => villeOriginauxCps.add(cp));
+        }
+    }
+
+    const updates = [];
+    for (const z of zones) {
+        const originaux = z.codes_postaux_originaux || z.codes_postaux || [];
+        let effective;
+        if (z.type === 'arrondissement') {
+            effective = [...originaux];
+        } else if (z.type === 'ville') {
+            effective = originaux.filter(cp => !arrondissementCps.has(cp));
+        } else {
+            effective = originaux.filter(cp => !arrondissementCps.has(cp) && !villeOriginauxCps.has(cp));
+        }
+        if (JSON.stringify(effective) !== JSON.stringify(z.codes_postaux || [])) {
+            updates.push({ id: z.id, codes_postaux: effective });
+        }
+    }
+
+    for (const u of updates) {
+        const { error: upErr } = await supabase.from('zones').update({ codes_postaux: u.codes_postaux }).eq('id', u.id);
+        if (upErr) console.error("recomputeCoverage update error:", upErr.message);
+    }
+
+    return updates.length;
+}
+
 class ZoneController {
     // 1. Récupérer toutes les zones (pour l'admin/liste)
     // src/controllers/zone.controller.js
@@ -52,7 +91,11 @@ class ZoneController {
     // 2. Créer une nouvelle zone
     static async create(req, res) {
         try {
-            const { nom, price, lat_center, lng_center, codes_postaux } = req.body;
+            const { nom, price, lat_center, lng_center, codes_postaux, codes_postaux_originaux, type } = req.body;
+
+            const originaux = Array.isArray(codes_postaux_originaux) && codes_postaux_originaux.length > 0
+                ? codes_postaux_originaux
+                : (Array.isArray(codes_postaux) ? codes_postaux : [codes_postaux]);
 
             const { data, error } = await supabase
                 .from('zones')
@@ -61,14 +104,20 @@ class ZoneController {
                     price: parseFloat(price) || 0,
                     lat_center: parseFloat(lat_center),
                     lng_center: parseFloat(lng_center),
-                    codes_postaux: Array.isArray(codes_postaux) ? codes_postaux : [codes_postaux],
+                    codes_postaux: originaux,
+                    codes_postaux_originaux: originaux,
+                    type: ['departement', 'arrondissement'].includes(type) ? type : 'ville',
                     statut_market: 'LIBRE'
                 }])
                 .select()
                 .single();
 
             if (error) throw error;
-            res.status(201).json(data);
+
+            await recomputeCoverage();
+
+            const { data: refreshed } = await supabase.from('zones').select('*').eq('id', data.id).single();
+            res.status(201).json(refreshed || data);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -134,9 +183,21 @@ class ZoneController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const { data, error } = await supabase.from('zones').update(req.body).eq('id', id).select().single();
+            const body = { ...req.body };
+
+            if (Array.isArray(body.codes_postaux_originaux) && body.codes_postaux_originaux.length > 0) {
+                body.codes_postaux = body.codes_postaux_originaux;
+            } else if (Array.isArray(body.codes_postaux) && body.codes_postaux.length > 0) {
+                body.codes_postaux_originaux = body.codes_postaux;
+            }
+
+            const { data, error } = await supabase.from('zones').update(body).eq('id', id).select().single();
             if (error) throw error;
-            res.json(data);
+
+            await recomputeCoverage();
+
+            const { data: refreshed } = await supabase.from('zones').select('*').eq('id', id).single();
+            res.json(refreshed || data);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -147,6 +208,9 @@ class ZoneController {
             const { id } = req.params;
             const { error } = await supabase.from('zones').delete().eq('id', id);
             if (error) throw error;
+
+            await recomputeCoverage();
+
             res.json({ message: 'Zone supprimée' });
         } catch (error) {
             res.status(500).json({ error: error.message });
