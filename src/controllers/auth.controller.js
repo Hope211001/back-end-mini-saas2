@@ -26,7 +26,8 @@ class AuthController {
   // HELPER : FONCTION D'ENVOI D'EMAIL
   // ==========================================
   static async sendVerificationEmail(email, name, token, id) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&id=${id}`;
+    const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+    const verificationUrl = `${frontendUrl}/verify-email?token=${token}&id=${id}`;
 
     console.log("------------------------------------------");
     console.log("📧 Tentative d'envoi d'email à :", email);
